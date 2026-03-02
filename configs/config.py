@@ -28,7 +28,7 @@ class Config:
 
     # ── Training ─────────────────────────────────────────────────────────
     TRAIN_PARAMS: dict = {
-        "epochs": 3,
+        "epochs": 5,
         "batch_size": 8,
         "learning_rate": 2e-5,
         "weight_decay": 0.01,

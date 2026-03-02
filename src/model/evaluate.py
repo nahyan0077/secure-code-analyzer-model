@@ -16,7 +16,13 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -38,7 +44,7 @@ def evaluate() -> dict:
     """Run evaluation on the test set and save metrics.
 
     Returns:
-        dict: Dictionary with accuracy, precision, recall, and f1.
+        dict: Dictionary with accuracy, precision, recall, f1, and confusion matrix.
     """
     Config.ensure_dirs()
     device = get_device()
@@ -74,7 +80,11 @@ def evaluate() -> dict:
             all_preds.extend(preds.tolist())
             all_labels.extend(labels.numpy().tolist())
 
-    # 5. Metrics
+    # 5. Confusion matrix
+    cm = confusion_matrix(all_labels, all_preds, labels=[0, 1])
+    tn, fp, fn, tp = cm.ravel()
+
+    # 6. Metrics
     metrics = {
         "accuracy": round(accuracy_score(all_labels, all_preds), 4),
         "precision": round(precision_score(all_labels, all_preds, zero_division=0), 4),
@@ -83,9 +93,15 @@ def evaluate() -> dict:
         "total_samples": len(all_labels),
         "positive_samples": sum(all_labels),
         "negative_samples": len(all_labels) - sum(all_labels),
+        "confusion_matrix": {
+            "true_positives": int(tp),
+            "false_positives": int(fp),
+            "true_negatives": int(tn),
+            "false_negatives": int(fn),
+        },
     }
 
-    # 6. Save
+    # 7. Save
     metrics_path = Config.REPORTS_DIR / "metrics.json"
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=2)
@@ -93,6 +109,7 @@ def evaluate() -> dict:
     logger.info("Evaluation results:")
     for k, v in metrics.items():
         logger.info("  %s: %s", k, v)
+    logger.info("Confusion Matrix: TP=%d, FP=%d, TN=%d, FN=%d", tp, fp, tn, fn)
     logger.info("Metrics saved to %s", metrics_path)
 
     return metrics

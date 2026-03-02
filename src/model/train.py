@@ -12,8 +12,10 @@ Usage::
 import sys
 from pathlib import Path
 
+import numpy as np
 import torch
 from torch import nn
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from transformers import Trainer, TrainingArguments
 
 # Ensure project root is on path when run as script
@@ -25,6 +27,7 @@ from configs.config import Config
 from src.data.dataset_loader import load_dataset
 from src.data.preprocessing import (
     VulnerabilityDataset,
+    balance_data,
     clean_data,
     compute_class_weights,
     split_data,
@@ -57,6 +60,21 @@ class WeightedTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 
+# ── Metrics callback ─────────────────────────────────────────────────────
+
+
+def compute_metrics(eval_pred) -> dict:
+    """Compute accuracy, precision, recall, and F1 for the Trainer."""
+    logits, labels = eval_pred
+    preds = np.argmax(logits, axis=-1)
+    return {
+        "accuracy": accuracy_score(labels, preds),
+        "precision": precision_score(labels, preds, zero_division=0),
+        "recall": recall_score(labels, preds, zero_division=0),
+        "f1": f1_score(labels, preds, zero_division=0),
+    }
+
+
 # ── Main ─────────────────────────────────────────────────────────────────
 
 
@@ -75,6 +93,11 @@ def main() -> None:
     logger.info("[bold yellow]Phase 1:[/bold yellow] Data Acquisition & Curation")
     df = load_dataset(Config.DATA_PATH, max_samples=Config.MAX_SAMPLES)
     df = clean_data(df)
+
+    # Balance the dataset BEFORE splitting so both train and val are balanced
+    logger.info("[bold yellow]Phase 1b:[/bold yellow] Balancing Dataset")
+    df = balance_data(df)
+
     train_df, val_df, _ = split_data(df)
 
     # 2. Tokenizer & datasets
@@ -118,7 +141,8 @@ def main() -> None:
         save_strategy=params["save_strategy"],
         logging_steps=params["logging_steps"],
         load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",
+        metric_for_best_model="eval_f1",
+        greater_is_better=True,
         seed=params["seed"],
         report_to="none",
     )
@@ -131,6 +155,7 @@ def main() -> None:
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
+        compute_metrics=compute_metrics,
     )
 
     trainer.train()
