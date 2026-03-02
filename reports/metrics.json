@@ -1,9 +1,9 @@
 {
-  "accuracy": 0.9428,
+  "accuracy": 0.9427,
   "precision": 0.0,
   "recall": 0.0,
   "f1": 0.0,
-  "total_samples": 5000,
-  "positive_samples": 286,
-  "negative_samples": 4714
+  "total_samples": 33050,
+  "positive_samples": 1895,
+  "negative_samples": 31155
 }
