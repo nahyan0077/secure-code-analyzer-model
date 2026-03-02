@@ -50,6 +50,10 @@ class PredictionResponse(BaseModel):
         default=None,
         description="Text-based ASCII heatmap of contributions.",
     )
+    findings: Optional[list[str]] = Field(
+        default=None,
+        description="List of key tokens contributing to the prediction.",
+    )
     outcome_summary: Optional[str] = Field(
         default=None,
         description="Human-readable explanation of the model decision.",

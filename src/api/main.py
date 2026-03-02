@@ -94,6 +94,7 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
     explanation = None
     heatmap = None
     outcome_summary = None
+    findings = None
 
     if request.include_explanation:
         explainer = _explainers.get(request.explainer)
@@ -103,7 +104,7 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
             try:
                 explanation = explainer.explain(request.code)
                 heatmap = generate_text_heatmap(explanation)
-                outcome_summary = generate_outcome_summary(
+                outcome_summary, findings = generate_outcome_summary(
                     result["is_vulnerable"], 
                     result["confidence"], 
                     explanation
@@ -117,6 +118,7 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
         confidence=result["confidence"],
         explanation=explanation,
         heatmap=heatmap,
+        findings=findings,
         outcome_summary=outcome_summary
     )
 
