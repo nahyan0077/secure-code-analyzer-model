@@ -1,108 +1,65 @@
-# Vulnerability Detection with CodeBERT 🛡️
+# 🛡️ Vulnerability Detection with CodeBERT
 
-Binary classification system that detects security vulnerabilities in C/C++ code snippets using a fine-tuned [CodeBERT](https://huggingface.co/microsoft/codebert-base) model. Includes high-transparency explainability (SHAP & LIME) and a FastAPI inference API.
+An advanced binary classification system designed to detect security vulnerabilities in C/C++ source code using a fine-tuned **CodeBERT** transformer model. This project implements a full "Trustworthy AI" pipeline, including class-imbalance handling, performance calibration, and model explainability (SHAP & LIME).
+
+---
+
+## 📊 Performance at a Glance
+
+| Metric | Formal Test Set (33k) | Realistic Benchmark (T=0.20) |
+| :--- | :--- | :--- |
+| **Accuracy** | 91.7% | 71.4% |
+| **ROC AUC** | **0.761** | — |
+| **Recall** | 22.1% (T=0.5) | **87.5%** |
+| **Precision** | 24.9% (T=0.5) | 70.0% |
+
+> [!NOTE]
+> The model is optimized for **Recall** in security contexts. While accuracy is high, the model is calibrated to be highly sensitive to actual vulnerability patterns in production-length code.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    A[C/C++ Source Code] --> B{Inference API}
+    B --> C[Tokenization - CodeBERT]
+    C --> D[Fine-tuned Transformer]
+    D --> E[Logit Output]
+    E --> F{Probability Calibration}
+    F -->|Threshold 0.20| G[Vulnerability Report]
+    G --> H[Explainability Layer]
+    H --> I[SHAP Heatmap]
+    H --> J[LIME Findings]
+```
 
 ---
 
 ## 🚀 Quick Start
 
 ### 1. Requirements
-Ensure you have [uv](https://github.com/astral-sh/uv) installed (the ultra-fast Python package manager).
+Ensure you have [uv](https://github.com/astral-sh/uv) installed.
 
-### 2. Setup
-Run this once to provision the environment and install dependencies:
+### 2. Setup & Training
 ```bash
-make setup
+make setup               # Provision environment
+make train MAX_SAMPLES=50000  # Train on 50k samples
 ```
 
-### 3. Training
-To train on a small sample (default 1,000):
+### 3. Serving & Analysis
 ```bash
-make train
-```
-To train on a specific number of samples (e.g., 50k):
-```bash
-make train MAX_SAMPLES=50000
-```
-
-### 4. Evaluation
-Run metrics on the test set:
-```bash
-make evaluate
-```
-
-### 5. Run the API
-Start the FastAPI inference service with auto-reload:
-```bash
-make dev
-```
-
-### 6. Test the API
-Use `curl` to send a C++ snippet for analysis.
-
-**Option A: LIME Explanation (Fastest)**
-```bash
+make dev                 # Start FastAPI server
+# Test with a C snippet
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{
-    "code": "void foo(char *input) { char buffer[10]; strcpy(buffer, input); }",
-    "include_explanation": true,
-    "explainer": "lime"
-  }'
-```
-
-**Option B: SHAP Explanation (Most Accurate)**
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "void foo(char *input) { char buffer[10]; strcpy(buffer, input); }",
-    "include_explanation": true,
-    "explainer": "shap"
-  }'
-```
-
-**Health Check**
-```bash
-curl http://localhost:8000/health
+  -d '{"code": "void foo(char *s) { char b[10]; strcpy(b, s); }", "threshold": 0.2}'
 ```
 
 ---
 
-## 📂 Project Structure
-
-```text
-vuln_detector/
-├── src/
-│   ├── api/               # FastAPI endpoints & schemas
-│   ├── data/              # Data loading & preprocessing
-│   ├── explainability/    # SHAP, LIME, & Visualizers
-│   ├── model/             # Training & Inference logic
-│   └── utils/             # Logging & Device selection
-├── configs/               # Global configuration
-├── model/                 # Fine-tuned model directory
-├── reports/               # Metrics & Model Card
-├── pyproject.toml         # Dependency management (uv)
-├── Makefile               # Task automation
-└── README.md
-```
+## 📖 Detailed Documentation
+For a deep dive into the methodology, hyperparameter optimization, and formal academic analysis, please refer to:
+👉 **[Academic Report & System Documentation](DOCUMENTATION.md)**
 
 ---
-
-## 💻 Hardware & Performance
-
-- **Cross-Platform Support**: Automatically detects and uses the best available hardware:
-    - **NVIDIA GPU**: Uses **CUDA** (Windows / Linux).
-    - **Apple Silicon**: Uses **MPS** (macOS).
-    - **Fallback**: Uses **CPU** if no compatible GPU is detected.
-- **Explainability**: SHAP/LIME runs are optimized for transparency without blocking inference.
-
-## 📊 Dataset
-
-Built using the [DiverseVul](https://github.com/wagner-group/diversevul) dataset, containing over 330,000 C/C++ functions with verified vulnerability labels.
-
----
-
-## 📜 Compliance
-
-This project includes a [Model Card](reports/model_card.md) documenting compliance with **EU AI Act** transparency obligations (Articles 11 & 14).
+*Developed as a Research Project for Vulnerability Detection in Software Systems.*

@@ -86,7 +86,11 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
     try:
-        result = _predictor.predict(request.code)
+        result = _predictor.predict(
+            request.code, 
+            threshold=request.threshold,
+            calibrate=request.calibrate
+        )
     except Exception as e:
         logger.error("Prediction failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
@@ -116,6 +120,8 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
     return PredictionResponse(
         is_vulnerable=result["is_vulnerable"],
         confidence=result["confidence"],
+        vuln_probability=result.get("vuln_probability"),
+        raw_logits=result.get("raw_logits"),
         explanation=explanation,
         heatmap=heatmap,
         findings=findings,

@@ -18,67 +18,86 @@ logger = get_logger(__name__)
 _REQUIRED_COLUMNS = {"func", "target"}
 
 
-def load_dataset(
-    path: Path | str,
-    max_samples: Optional[int] = None,
-) -> pd.DataFrame:
-    """Load the DiverseVul JSONL dataset.
-
+def load_dataset_indices(path: Path | str) -> pd.DataFrame:
+    """Pass 1: Load ONLY labels and metadata (no code) to minimize RAM.
+    
     Args:
-        path: Path to the ``.json`` / ``.jsonl`` file.
-        max_samples: If set and > 0, load at most this many records.
-            ``None`` or ``0`` loads all records.
-
+        path: Path to JSONL file.
+        
     Returns:
-        pd.DataFrame: DataFrame with at least ``func`` and ``target`` columns.
-
-    Raises:
-        FileNotFoundError: If the dataset file does not exist.
-        ValueError: If required columns are missing.
+        pd.DataFrame: DataFrame with metadata but NO 'func' column.
     """
     path = Path(path)
-    if not path.exists():
-        raise FileNotFoundError(f"Dataset not found: {path}")
-
-    logger.info("Reading raw JSONL records from [bold cyan]%s[/bold cyan] ...", path)
-
-    records: list[dict] = []
+    logger.info("Pass 1: Scanning metadata from [bold cyan]%s[/bold cyan] ...", path)
+    
+    indices_data = []
+    # Only keep metadata for splitting/balancing
+    keep_keys = {"target", "cwe", "project"}
+    
     with open(path, "r", encoding="utf-8") as fh:
         for i, line in enumerate(fh):
             line = line.strip()
             if not line:
                 continue
-            records.append(json.loads(line))
             
-            if (i + 1) % 50000 == 0:
-                logger.info("Parsed %d records ...", i + 1)
-
-    logger.info("Finished parsing [bold green]%d[/bold green] raw records.", len(records))
-    df = pd.DataFrame(records)
-
-    # Validate columns
-    missing = _REQUIRED_COLUMNS - set(df.columns)
-    if missing:
-        logger.error("Validation failed: missing columns %s", missing)
-        raise ValueError(f"Dataset missing required columns: {missing}")
-
-    # Shuffle to avoid ordering bias (JSONL may be sorted by label)
-    logger.info("Shuffling dataset to eliminate ordering bias ...")
-    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
-
-    # Subsample AFTER shuffling so we get a representative class mix
-    if max_samples and max_samples > 0 and len(df) > max_samples:
-        logger.info("Subsampling to [bold yellow]%d[/bold yellow] records ...", max_samples)
-        df = df.head(max_samples).reset_index(drop=True)
-
-    # Keep only what we need + useful metadata
-    keep_cols = [c for c in ["func", "target", "cwe", "project"] if c in df.columns]
-    df = df[keep_cols]
-
-    vuln_count = (df["target"] == 1).sum()
-    safe_count = (df["target"] == 0).sum()
-    logger.info(
-        "Loading complete: [bold green]%d[/bold green] records [dim](%d vuln, %d safe)[/dim]",
-        len(df), vuln_count, safe_count
-    )
+            # Fast parse: only look for metadata
+            raw = json.loads(line)
+            record = {k: raw[k] for k in keep_keys if k in raw}
+            record["file_index"] = i # Store original line index
+            indices_data.append(record)
+            
+            if (i + 1) % 100000 == 0:
+                logger.info("Scanned metadata for %d records ...", i + 1)
+                
+    df = pd.DataFrame(indices_data)
+    logger.info("Pass 1 complete: Metadata for [bold green]%d[/bold green] records loaded.", len(df))
     return df
+
+
+def load_selected_records(path: Path | str, selected_indices: set[int]) -> pd.DataFrame:
+    """Pass 2: Selective load. Only parse full JSON for needed indices.
+    
+    Args:
+        path: Path to JSONL file.
+        selected_indices: Set of line indices to load.
+        
+    Returns:
+        pd.DataFrame: Final DataFrame with 'func' and 'target'.
+    """
+    path = Path(path)
+    logger.info("Pass 2: Selective loading [bold yellow]%d[/bold yellow] snippets ...", len(selected_indices))
+    
+    records = []
+    keep_keys = {"func", "target", "cwe", "project"}
+    
+    with open(path, "r", encoding="utf-8") as fh:
+        for i, line in enumerate(fh):
+            if i not in selected_indices:
+                continue
+                
+            line = line.strip()
+            if not line:
+                continue
+                
+            raw = json.loads(line)
+            filtered = {k: raw[k] for k in keep_keys if k in raw}
+            records.append(filtered)
+            
+            if len(records) % 10000 == 0:
+                logger.info("Loaded %d/%d code snippets ...", len(records), len(selected_indices))
+                
+    df = pd.DataFrame(records)
+    logger.info("Pass 2 complete: [bold green]%d[/bold green] records loaded into memory.", len(df))
+    return df
+
+
+def load_dataset(path: Path | str, max_samples: Optional[int] = None) -> pd.DataFrame:
+    """Legacy wrapper that uses two-pass internal logic."""
+    df_indices = load_dataset_indices(path)
+    
+    if max_samples and max_samples > 0 and len(df_indices) > max_samples:
+        df_indices = df_indices.sample(n=max_samples, random_state=42)
+        
+    indices_to_load = set(df_indices["file_index"].tolist())
+    return load_selected_records(path, indices_to_load)
+

@@ -38,6 +38,8 @@ def load_model(
     model = AutoModelForSequenceClassification.from_pretrained(
         model_name,
         num_labels=num_labels,
+        id2label={0: "safe", 1: "vulnerable"},
+        label2id={"safe": 0, "vulnerable": 1},
     )
     return model
 

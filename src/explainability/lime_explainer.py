@@ -27,7 +27,7 @@ class LimeExplainer:
         # Initialize LIME text explainer
         self.explainer = LimeTextExplainer(
             class_names=["Safe", "Vulnerable"],
-            split_expression=r"\W+",  # Split by non-alphanumeric characters (common for code)
+            split_expression=r"(?<=[;{}])\s*",  # Split AFTER statements (semicolons/braces)
             random_state=42
         )
         logger.info("LimeExplainer initialised")

@@ -51,31 +51,39 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def balance_data(df: pd.DataFrame, strategy: str = "undersample") -> pd.DataFrame:
-    """Balance the dataset by under-sampling the majority class.
-
-    This is an **optional** step — the default training pipeline uses
-    class-weighted loss instead, which is generally preferred.
+    """Balance the dataset to have a 1:1 ratio of safe and vulnerable samples.
 
     Args:
         df: Cleaned DataFrame.
-        strategy: ``"undersample"    """
-    logger.info("Applying minority-class balancing [dim](strategy=%s)[/dim] ...", strategy)
+        strategy: "undersample" (reduce majority) or "oversample" (duplicate minority).
+
+    Returns:
+        pd.DataFrame: Balanced DataFrame.
+    """
+    logger.info("Applying class balancing [dim](strategy=%s)[/dim] ...", strategy)
     vuln = df[df["target"] == 1]
     safe = df[df["target"] == 0]
-    minority_size = min(len(vuln), len(safe))
+    
+    if len(vuln) == 0 or len(safe) == 0:
+        logger.warning("One class is empty; skipping balancing.")
+        return df
 
     if strategy == "undersample":
-        majority = safe if len(safe) > len(vuln) else vuln
-        majority_down = majority.sample(n=minority_size, random_state=Config.TRAIN_PARAMS["seed"])
-        minority = vuln if len(vuln) <= len(safe) else safe
-        balanced = pd.concat([majority_down, minority]).sample(
-            frac=1, random_state=Config.TRAIN_PARAMS["seed"]
-        )
-        balanced = balanced.reset_index(drop=True)
-        logger.info("Balanced data: [bold green]%d[/bold green] → [bold yellow]%d[/bold yellow] rows", len(df), len(balanced))
-        return balanced
+        minority_size = min(len(vuln), len(safe))
+        safe_down = safe.sample(n=minority_size, random_state=Config.TRAIN_PARAMS["seed"])
+        vuln_down = vuln.sample(n=minority_size, random_state=Config.TRAIN_PARAMS["seed"])
+        balanced = pd.concat([safe_down, vuln_down])
+    elif strategy == "oversample":
+        majority_size = max(len(vuln), len(safe))
+        safe_up = safe.sample(n=majority_size, replace=True, random_state=Config.TRAIN_PARAMS["seed"])
+        vuln_up = vuln.sample(n=majority_size, replace=True, random_state=Config.TRAIN_PARAMS["seed"])
+        balanced = pd.concat([safe_up, vuln_up])
+    else:
+        raise ValueError(f"Unknown balancing strategy: {strategy}")
 
-    raise ValueError(f"Unknown balancing strategy: {strategy}")
+    balanced = balanced.sample(frac=1, random_state=Config.TRAIN_PARAMS["seed"]).reset_index(drop=True)
+    logger.info("Balanced data: [bold green]%d[/bold green] samples [dim](1:1 ratio)[/dim]", len(balanced))
+    return balanced
 
 
 # ── Splitting ────────────────────────────────────────────────────────────
@@ -188,7 +196,6 @@ class VulnerabilityDataset(Dataset):
         encoding = self.tokenizer(
             self.texts[idx],
             truncation=True,
-            padding="max_length",
             max_length=self.max_length,
             return_tensors="pt",
         )

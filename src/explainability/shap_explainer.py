@@ -73,7 +73,7 @@ class ShapExplainer:
             encoding = self.tokenizer(
                 text,
                 truncation=True,
-                padding="max_length",
+                padding=True,
                 max_length=Config.MAX_LENGTH,
                 return_tensors="pt",
             ).to(device)

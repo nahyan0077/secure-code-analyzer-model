@@ -18,9 +18,9 @@ setup:
 
 train:
 ifdef MAX_SAMPLES
-	MAX_SAMPLES=$(MAX_SAMPLES) uv run python -m src.model.train
+	PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 MAX_SAMPLES=$(MAX_SAMPLES) uv run python -m src.model.train
 else
-	uv run python -m src.model.train
+	PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 uv run python -m src.model.train
 endif
 
 evaluate:

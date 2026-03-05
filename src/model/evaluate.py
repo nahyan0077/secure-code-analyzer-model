@@ -22,9 +22,11 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
+    roc_auc_score,
 )
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from transformers import DataCollatorWithPadding
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
@@ -61,10 +63,15 @@ def evaluate() -> dict:
 
     # 3. Dataset & loader
     test_dataset = VulnerabilityDataset(test_df, tokenizer=tokenizer)
-    loader = DataLoader(test_dataset, batch_size=Config.TRAIN_PARAMS["batch_size"])
+    loader = DataLoader(
+        test_dataset, 
+        batch_size=Config.TRAIN_PARAMS["batch_size"],
+        collate_fn=DataCollatorWithPadding(tokenizer)
+    )
 
     # 4. Inference
     all_preds: list[int] = []
+    all_probs: list[float] = []  # softmax P(vulnerable) for ROC AUC
     all_labels: list[int] = []
 
     logger.info("Running evaluation on %d samples …", len(test_dataset))
@@ -75,9 +82,11 @@ def evaluate() -> dict:
             labels = batch["labels"]
 
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            preds = torch.argmax(outputs.logits, dim=-1).cpu().numpy()
+            probs = torch.softmax(outputs.logits, dim=-1).cpu().numpy()
+            preds = np.argmax(probs, axis=-1)
 
             all_preds.extend(preds.tolist())
+            all_probs.extend(probs[:, 1].tolist())  # P(vulnerable)
             all_labels.extend(labels.numpy().tolist())
 
     # 5. Confusion matrix
@@ -90,6 +99,7 @@ def evaluate() -> dict:
         "precision": round(precision_score(all_labels, all_preds, zero_division=0), 4),
         "recall": round(recall_score(all_labels, all_preds, zero_division=0), 4),
         "f1": round(f1_score(all_labels, all_preds, zero_division=0), 4),
+        "roc_auc": round(roc_auc_score(all_labels, all_probs), 4),
         "total_samples": len(all_labels),
         "positive_samples": sum(all_labels),
         "negative_samples": len(all_labels) - sum(all_labels),

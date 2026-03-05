@@ -24,6 +24,16 @@ class PredictionRequest(BaseModel):
         description="Which explainer to use: 'shap' or 'lime'.",
         pattern="^(shap|lime)$"
     )
+    threshold: float = Field(
+        default=0.2,
+        description="Confidence threshold to flag as vulnerable (default 0.2). Lower increases recall.",
+        ge=0.0,
+        le=1.0
+    )
+    calibrate: bool = Field(
+        default=False,
+        description="Apply prior-scaling to compensate for class imbalance (not needed for new 1:1 model).",
+    )
 
 
 class TokenScore(BaseModel):
@@ -41,6 +51,12 @@ class PredictionResponse(BaseModel):
     )
     confidence: float = Field(
         ..., description="Confidence score for the prediction (0–1)."
+    )
+    vuln_probability: Optional[float] = Field(
+        default=None, description="Raw probability of the 'vulnerable' class (0–1)."
+    )
+    raw_logits: Optional[list[float]] = Field(
+        default=None, description="Raw logit values from the model before activation."
     )
     explanation: Optional[list[TokenScore]] = Field(
         default=None,
