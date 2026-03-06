@@ -5,6 +5,7 @@ Provides cleaning, balancing, splitting, class-weight computation,
 and a PyTorch Dataset that tokenises code snippets with CodeBERT.
 """
 
+import re
 from typing import Optional, Tuple
 
 import numpy as np
@@ -45,6 +46,29 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         len(df), dropped
     )
     return df
+
+
+def optimize_code_for_bert(code: str) -> str:
+    """Clean code snippet to make it more 'readable' for natural language models like BERT.
+    
+    Removes comments, splits camelCase, adds spacing around operators, and normalises whitespace.
+    """
+    # 1. Remove C-style comments (/* ... */ and // ...)
+    code = re.sub(r'//.*?\n|/\*.*?\*/', '', code, flags=re.S)
+    
+    # 2. Split camelCase (e.g., 'bufferSize' -> 'buffer Size')
+    code = re.sub(r'([a-z0-9])([A-Z])', r'\1 \2', code)
+    
+    # 3. Add spacing around operators (e.g., 'a+b' -> 'a + b')
+    code = re.sub(r'([+\-*/%=<>!&|^~])', r' \1 ', code)
+    
+    # 4. Normalize whitespace (Replace tabs/multiple spaces with single space)
+    code = re.sub(r'\s+', ' ', code).strip()
+    
+    # 5. Lowercase (BERT base uncased likes lowercase)
+    code = code.lower()
+    
+    return code
 
 
 # ── Balancing ────────────────────────────────────────────────────────────
@@ -193,8 +217,14 @@ class VulnerabilityDataset(Dataset):
         return len(self.texts)
 
     def __getitem__(self, idx: int) -> dict:
+        text = self.texts[idx]
+        
+        # Apply BERT-specific cleaning if not using a code-specialised model
+        if "codebert" not in Config.MODEL_NAME.lower():
+            text = optimize_code_for_bert(text)
+
         encoding = self.tokenizer(
-            self.texts[idx],
+            text,
             truncation=True,
             max_length=self.max_length,
             return_tensors="pt",

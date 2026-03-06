@@ -190,6 +190,7 @@ def main() -> None:
         metric_for_best_model="eval_f1",
         greater_is_better=True,
         seed=params["seed"],
+        lr_scheduler_type="cosine",
         report_to="none",
         fp16=device.type == "cuda",
         dataloader_num_workers=2 if device.type == "cuda" else 0,

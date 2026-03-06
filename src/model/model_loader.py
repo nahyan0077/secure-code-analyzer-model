@@ -8,6 +8,7 @@ Wraps HuggingFace ``AutoModelForSequenceClassification`` and
 from pathlib import Path
 from typing import Tuple
 
+import torch.nn as nn
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -41,6 +42,18 @@ def load_model(
         id2label={0: "safe", 1: "vulnerable"},
         label2id={"safe": 0, "vulnerable": 1},
     )
+
+    # Inject a stronger MLP head for natural language models
+    if "codebert" not in model_name.lower():
+        logger.info("Injecting [bold yellow]stronger MLP classifier head[/bold yellow] for non-CodeBERT model")
+        hidden_size = model.config.hidden_size
+        model.classifier = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(hidden_size, num_labels)
+        )
+        
     return model
 
 

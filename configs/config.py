@@ -37,16 +37,16 @@ class Config:
     REPORTS_DIR: Path = PROJECT_ROOT / "reports"
 
     # ── Model ────────────────────────────────────────────────────────────
-    MODEL_NAME: str = "microsoft/codebert-base"
+    MODEL_NAME: str = "bert-base-uncased"
     NUM_LABELS: int = 2
     MAX_LENGTH: int = int(os.getenv("MAX_LENGTH", "512" if IS_GPU else "256"))
 
     # ── Training (auto-adjusts for GPU vs MPS) ───────────────────────────
     TRAIN_PARAMS: dict = {
-        "epochs": 5,
+        "epochs": 10,
         "batch_size": int(os.getenv("BATCH_SIZE", "16" if IS_GPU else "1")),
         "gradient_accumulation_steps": 1 if IS_GPU else 8,  # GPU: large batch directly; MPS: accumulate
-        "learning_rate": 2e-5,
+        "learning_rate": 3e-5,
         "weight_decay": 0.05,
         "warmup_ratio": 0.1,
         "eval_strategy": "epoch",
