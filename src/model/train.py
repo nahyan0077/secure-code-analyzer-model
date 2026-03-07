@@ -142,14 +142,20 @@ def main() -> None:
 
     # 2. Tokenizer & datasets
     logger.info("[bold yellow]Phase 2:[/bold yellow] Tokenization & Dataset Preparation")
+    
+    # Apply Balanced Undersampling for Precision Boost (Recommended for BERT)
+    from src.data.preprocessing import balance_data
+    train_df = balance_data(train_df, strategy="undersample")
+    
     tokenizer = load_tokenizer()
     train_dataset = VulnerabilityDataset(train_df, tokenizer=tokenizer)
     val_dataset = VulnerabilityDataset(val_df, tokenizer=tokenizer)
     
-    # 3. Class weights — compute from training data BEFORE releasing dataframes
-    logger.info("[bold yellow]Phase 3:[/bold yellow] Class Weight Computation")
-    class_weights = compute_class_weights(train_df)
-    logger.info("Class weights: %s", class_weights.tolist())
+    # 3. Class weights — Disabbled for Balanced Training
+    logger.info("[bold yellow]Phase 3:[/bold yellow] Class Weight Check")
+    # Using neutral weights (1.0) because data is now physically balanced 50/50
+    class_weights = torch.ones(Config.NUM_LABELS)
+    logger.info("Using balanced data strategy (neutral weights: %s)", class_weights.tolist())
 
     # Eagerly release dataframes now that Dataset objects hold the data
     logger.info("Releasing [dim]train_df/val_df[/dim] memory ...")

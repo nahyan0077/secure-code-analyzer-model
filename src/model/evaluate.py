@@ -42,8 +42,11 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def evaluate() -> dict:
+def evaluate(threshold: float = 0.5) -> dict:
     """Run evaluation on the test set and save metrics.
+
+    Args:
+        threshold: Classification threshold (default 0.5).
 
     Returns:
         dict: Dictionary with accuracy, precision, recall, f1, and confusion matrix.
@@ -83,7 +86,9 @@ def evaluate() -> dict:
 
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)
             probs = torch.softmax(outputs.logits, dim=-1).cpu().numpy()
-            preds = np.argmax(probs, axis=-1)
+            
+            # Use custom threshold instead of simple argmax
+            preds = (probs[:, 1] >= threshold).astype(int)
 
             all_preds.extend(preds.tolist())
             all_probs.extend(probs[:, 1].tolist())  # P(vulnerable)

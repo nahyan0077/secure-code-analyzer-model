@@ -8,6 +8,8 @@ Wraps HuggingFace ``AutoModelForSequenceClassification`` and
 from pathlib import Path
 from typing import Tuple
 
+import json
+import torch
 import torch.nn as nn
 from transformers import (
     AutoModelForSequenceClassification,
@@ -113,6 +115,37 @@ def load_trained_model(
             f"Please run training first: python -m src.model.train"
         )
     logger.info("Loading trained model from %s", path)
+    
+    # Check what the base model name was from the saved config
+    with open(config_file, "r") as f:
+        saved_config = json.load(f)
+    base_model_name_or_path = saved_config.get("_name_or_path", Config.MODEL_NAME)
+
+    # 1. Load the model architecture
     model = AutoModelForSequenceClassification.from_pretrained(path)
+    
+    # 2. Re-inject the custom MLP head if it's a non-CodeBERT model
+    # We use base_model_name_or_path to determine if it needs the head
+    if "codebert" not in base_model_name_or_path.lower():
+        logger.info("Re-injecting [bold yellow]MLP head[/bold yellow] for loading trained weights")
+        hidden_size = model.config.hidden_size
+        num_labels = len(model.config.id2label)
+        model.classifier = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(hidden_size, num_labels)
+        )
+        # Now reload the weights specifically to map into the new classifier
+        from safetensors.torch import load_model as load_safe_weights
+        weights_path = path / "model.safetensors"
+        if weights_path.exists():
+            load_safe_weights(model, weights_path, strict=False)
+        else:
+            # Fallback for bin files if safetensors doesn't exist
+            bin_path = path / "pytorch_model.bin"
+            if bin_path.exists():
+                model.load_state_dict(torch.load(bin_path, map_location="cpu"), strict=False)
+
     tokenizer = AutoTokenizer.from_pretrained(path)
     return model, tokenizer
