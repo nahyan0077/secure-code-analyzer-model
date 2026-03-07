@@ -1,16 +1,16 @@
 {
-  "accuracy": 0.8092,
-  "precision": 0.144,
-  "recall": 0.4707,
-  "f1": 0.2205,
+  "accuracy": 0.8729,
+  "precision": 0.1753,
+  "recall": 0.3288,
+  "f1": 0.2287,
   "roc_auc": 0.7376,
   "total_samples": 33050,
   "positive_samples": 1895,
   "negative_samples": 31155,
   "confusion_matrix": {
-    "true_positives": 892,
-    "false_positives": 5303,
-    "true_negatives": 25852,
-    "false_negatives": 1003
+    "true_positives": 623,
+    "false_positives": 2930,
+    "true_negatives": 28225,
+    "false_negatives": 1272
   }
 }

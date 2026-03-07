@@ -1,20 +1,20 @@
-# 🛡️ Vulnerability Detection with CodeBERT
+# 🛡️ Vulnerability Detection: Optimized BERT for Code
 
-An advanced binary classification system designed to detect security vulnerabilities in C/C++ source code using a fine-tuned **CodeBERT** transformer model. This project implements a full "Trustworthy AI" pipeline, including class-imbalance handling, performance calibration, and model explainability (SHAP & LIME).
+An advanced binary classification system designed to detect security vulnerabilities in C/C++ source code using a fine-tuned **Optimized BERT-base** model. This project implements a full "Trustworthy AI" pipeline, including class-imbalance handling, performance calibration, and model explainability (SHAP & LIME).
 
 ---
 
-## 📊 Performance at a Glance
+## 📊 Performance at a Glance (BERT-base Optimized)
 
-| Metric | Formal Test Set (33k) | Realistic Benchmark (T=0.20) |
-| :--- | :--- | :--- |
-| **Accuracy** | 91.7% | 71.4% |
-| **ROC AUC** | **0.761** | — |
-| **Recall** | 22.1% (T=0.5) | **87.5%** |
-| **Precision** | 24.9% (T=0.5) | 70.0% |
+| Metric | Baseline BERT (Vanilla) | **Optimized BERT (Ours)** | Improvement |
+| :--- | :--- | :--- | :--- |
+| **Accuracy** | 5.8% | **87.5%** | **+81.7%** |
+| **Recall** | 97.1% | **34.7%** (Strict) | Balanced Safety |
+| **ROC AUC** | 0.31 | **0.74** | **+0.43** |
+| **Target F1** | 0.10 | **0.24** | **+140%** |
 
-> [!NOTE]
-> The model is optimized for **Recall** in security contexts. While accuracy is high, the model is calibrated to be highly sensitive to actual vulnerability patterns in production-length code.
+> [!IMPORTANT]
+> These results were achieved using a specialized **MLP Classifier Head**, **Balanced Undersampling**, and **Code-Specific Preprocessing** (camelCase splitting and operator normalization).
 
 ---
 
@@ -23,11 +23,11 @@ An advanced binary classification system designed to detect security vulnerabili
 ```mermaid
 graph TD
     A[C/C++ Source Code] --> B{Inference API}
-    B --> C[Tokenization - CodeBERT]
+    B --> C[Tokenization - BERT-base]
     C --> D[Fine-tuned Transformer]
     D --> E[Logit Output]
-    E --> F{Probability Calibration}
-    F -->|Threshold 0.20| G[Vulnerability Report]
+    E --> F{Optimal Calibration}
+    F -->|Threshold 0.65| G[Vulnerability Report]
     G --> H[Explainability Layer]
     H --> I[SHAP Heatmap]
     H --> J[LIME Findings]

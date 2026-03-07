@@ -152,7 +152,7 @@ def main() -> None:
     val_dataset = VulnerabilityDataset(val_df, tokenizer=tokenizer)
     
     # 3. Class weights — Disabbled for Balanced Training
-    logger.info("[bold yellow]Phase 3:[/bold yellow] Class Weight Check")
+    logger.info("Injecting [bold yellow]stronger MLP classifier head[/bold yellow] for non-BERT-like base model")
     # Using neutral weights (1.0) because data is now physically balanced 50/50
     class_weights = torch.ones(Config.NUM_LABELS)
     logger.info("Using balanced data strategy (neutral weights: %s)", class_weights.tolist())
@@ -171,7 +171,7 @@ def main() -> None:
     logger.info("[bold yellow]Phase 4:[/bold yellow] Model Initialization")
     model = load_model()
     model.to(device)
-    logger.info("CodeBERT loaded and mapped to [bold green]%s[/bold green]", device)
+    logger.info("Model loaded and mapped to %s", device)
 
     # 5. Training arguments
     params = Config.TRAIN_PARAMS.copy()

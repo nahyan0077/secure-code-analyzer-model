@@ -20,8 +20,7 @@ logger = get_logger(__name__)
 
 
 class ShapExplainer:
-    """SHAP explainer for CodeBERT vulnerability predictions.
-
+    """Model-agnostic explainer using SHAP for the vulnerability classifier.
     Uses ``shap.Explainer`` with a custom prediction wrapper.
     Inference for SHAP is forced to CPU for compatibility.
     """

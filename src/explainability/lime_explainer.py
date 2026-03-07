@@ -1,6 +1,6 @@
 """
-LIME (Local Interpretable Model-agnostic Explanations) for CodeBERT.
-
+Local Interpretable Model-agnostic Explanations (LIME) for the
+    vulnerability classifier.
 Provides an alternative local explanation by perturbing the input 
 and training a linear model to approximate the local decision boundary.
 """

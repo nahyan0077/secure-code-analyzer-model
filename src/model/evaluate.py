@@ -131,4 +131,9 @@ def evaluate(threshold: float = 0.5) -> dict:
 
 
 if __name__ == "__main__":
-    evaluate()
+    import os
+    # Read threshold from environment variable, default to 0.5
+    threshold = float(os.getenv("THRESHOLD", 0.5))
+    if threshold != 0.5:
+        logger.info("Using custom threshold: %.3f", threshold)
+    evaluate(threshold=threshold)

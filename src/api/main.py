@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Vulnerability Detection API",
-    description="Detect security vulnerabilities in C/C++ code using CodeBERT. High-transparency edition.",
+    description="Detect security vulnerabilities in C/C++ code using an optimized BERT-base transformer. High-transparency edition.",
     version="1.1.0",
     lifespan=lifespan,
 )

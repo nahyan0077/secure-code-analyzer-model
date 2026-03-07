@@ -24,11 +24,11 @@ else
 endif
 
 evaluate:
-ifdef MAX_SAMPLES
-	MAX_SAMPLES=$(MAX_SAMPLES) uv run python -m src.model.evaluate
-else
-	uv run python -m src.model.evaluate
-endif
+	@if [ -n "$$MAX_SAMPLES" ]; then \
+		MAX_SAMPLES=$$MAX_SAMPLES THRESHOLD=$${THRESHOLD:-0.5} uv run python -m src.model.evaluate; \
+	else \
+		THRESHOLD=$${THRESHOLD:-0.5} uv run python -m src.model.evaluate; \
+	fi
 
 dev:
 	uv run python -m uvicorn src.api.main:app --host $(HOST) --port $(PORT) --reload

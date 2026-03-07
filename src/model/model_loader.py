@@ -2,7 +2,7 @@
 Model loading and persistence utilities.
 
 Wraps HuggingFace ``AutoModelForSequenceClassification`` and
-``AutoTokenizer`` for the CodeBERT-based vulnerability classifier.
+``AutoTokenizer`` for the optimized vulnerability classifier.
 """
 
 from pathlib import Path
@@ -47,7 +47,7 @@ def load_model(
 
     # Inject a stronger MLP head for natural language models
     if "codebert" not in model_name.lower():
-        logger.info("Injecting [bold yellow]stronger MLP classifier head[/bold yellow] for non-CodeBERT model")
+        logger.info("Injecting [bold yellow]stronger MLP classifier head[/bold yellow] for Optimized BERT model")
         hidden_size = model.config.hidden_size
         model.classifier = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),

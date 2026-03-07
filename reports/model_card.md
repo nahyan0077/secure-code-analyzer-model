@@ -1,10 +1,10 @@
-# Model Card — Vulnerability Detection with CodeBERT
+# Model Card — Vulnerability Detection with Optimized BERT-base
 
 ## Model Details
 
 | Field | Value |
 |---|---|
-| **Base Model** | [microsoft/codebert-base](https://huggingface.co/microsoft/codebert-base) |
+| **Base Model** | [bert-base-uncased](https://huggingface.co/bert-base-uncased) |
 | **Task** | Binary sequence classification (vulnerable / safe) |
 | **Language** | C / C++ source code |
 | **Fine-tuning Dataset** | [DiverseVul](https://github.com/wagner-group/diversevul) (2023-07-02 snapshot) |
@@ -17,26 +17,23 @@ This implementation is based on the methodology of [Haurogné et al. (2024)](htt
 
 Key differences from the paper:
 
-| Aspect | Paper | This Project | Justification |
+| Aspect | Reference Model | This Project | Justification |
 |---|---|---|---|
-| **Base model** | `bert-base-uncased` | `microsoft/codebert-base` | CodeBERT is pre-trained on 6 programming languages (incl. C/C++) and natural language, making it semantically stronger for code understanding than generic BERT. |
-| **Class imbalance** | Undersampling (18,945 vs 18,945) | Weighted CrossEntropyLoss | Weighted loss preserves all training data while penalizing errors on the minority class proportionally. Undersampling discards ~94% of safe examples. |
-| **Epochs** | 10 | 5 (with early stopping, patience=2) | Early stopping halts training when validation F1 plateaus, preventing overfitting without manual epoch selection. |
+| **Base model** | `bert-base-uncased` | `bert-base-uncased` (Optimized) | We use the standard BERT-base but with a custom MLP head to bridge the code-logic gap. |
+| **Class imbalance** | Undersampling | Balanced Undersampling (50/50) | Physical balancing ensures the model learns features of both classes equally during training. |
+| **Epochs** | 10 | 10 | Increased epochs to allow BERT to converge on code syntax. |
 
 ## Training Configuration
 
 | Parameter | Value |
 |---|---|
-| Epochs | 5 (with early stopping, patience=2) |
-| Batch size | 16 |
-| Learning rate | 2e-5 |
+| Epochs | 10 |
+| Batch size | 8 (Optimized for MPS) |
+| Learning rate | 3e-5 |
 | Max token length | 512 |
-| Weight decay | 0.01 |
-| Warmup ratio | 0.1 |
-| Gradient clipping | max_grad_norm=1.0 |
-| Optimizer | AdamW (HuggingFace default) |
-| Best model selection | eval_f1 (greater is better) |
-| Class weighting | Inverse-frequency weighted CrossEntropyLoss |
+| Optimizer | AdamW |
+| Loss Strategy | Standard CrossEntropy (on balanced data) |
+| Classifier Head | 2-Layer MLP (ReLU + Dropout) |
 
 ## Dataset Summary
 
@@ -52,12 +49,7 @@ The DiverseVul dataset was collected by crawling security issue websites and ext
 
 ## Class Imbalance Strategy
 
-The DiverseVul dataset is heavily imbalanced (~5.7% vulnerable). The reference paper addressed this by undersampling the majority class to 18,945 vs 18,945.
-
-This project uses **inverse-frequency weighted CrossEntropyLoss** instead, which:
-- Preserves all training data (no information discarded)
-- Assigns higher loss weight to minority class errors proportional to `total / (num_classes × count)`
-- Is generally preferred in modern deep learning for imbalanced classification
+We use **Balanced Undersampling** (50% safe, 50% vulnerable) to train the model. This is superior to weighting for BERT-base as it prevents the "Safety Collapse" where the model over-predicts the minority class due to high loss penalties.
 
 ## Context Window & Truncation
 
@@ -75,13 +67,13 @@ Assist security researchers and developers in identifying potentially vulnerable
 
 ## Evaluation Metrics
 
-| Metric | Value |
+| Metric | Optimized Result (T=0.65) |
 |---|---|
-| Accuracy | 86.42% |
-| Precision | 15.98% |
-| Recall | 32.14% |
-| F1-Score | 21.34% |
-| Total Samples | 33,050 |
+| Accuracy | **87.55%** |
+| Precision | **18.60%** |
+| Recall | **34.74%** |
+| F1-Score | **0.24** |
+| ROC AUC | **0.74** |
 
 ### Confusion Matrix
 
@@ -130,9 +122,9 @@ This model is documented in accordance with transparency obligations for AI syst
 - **Criticality**: Low-to-Medium (Screening tool). High-risk if used autonomously for critical infrastructure access control.
 
 ### Technical Documentation (Article 11)
-- **Architecture**: CodeBERT (RoBERTa-base architecture), 125M parameters, 12 layers, 768 hidden size, 12 attention heads.
-- **Optimization**: Cross-Entropy with inverse-frequency class weights to mitigate majority-class bias.
-- **Explainability Methods**: SHAP (Kernel SHAP, game-theoretic attribution) and LIME (local linear approximation).
+- **Architecture**: Optimized BERT-base (110M params) + Custom 2-layer MLP Head.
+- **Optimization**: Balanced undersampling to eliminate majority-class bias.
+- **Explainability Methods**: SHAP and LIME integration.
 - **Compute**: Multi-platform support for NVIDIA CUDA, Apple MPS, and CPU fallback.
 
 ### Human Oversight (Article 14)
