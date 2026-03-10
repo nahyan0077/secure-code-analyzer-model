@@ -205,11 +205,16 @@ def main() -> None:
     if plots_to_open:
         console.print(f"\n[bold magenta]Visualization Mode Enabled:[/bold magenta] Opening {len(plots_to_open)} graphs...")
         
+        import platform
         for plot in plots_to_open:
             try:
-                # Use 'open' for macOS, 'xdg-open' for Linux
-                cmd = "open" if os.uname().sysname == "Darwin" else "xdg-open"
-                subprocess.run([cmd, plot], check=False)
+                system = platform.system()
+                if system == "Darwin":  # macOS
+                    subprocess.run(["open", plot], check=False)
+                elif system == "Windows":
+                    os.startfile(os.path.abspath(plot))
+                else:  # Linux and others
+                    subprocess.run(["xdg-open", plot], check=False)
             except Exception as e:
                 console.print(f"[dim red]Could not open plot {plot}: {e}[/dim red]")
 
