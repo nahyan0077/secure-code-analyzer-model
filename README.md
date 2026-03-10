@@ -57,6 +57,32 @@ curl -X POST http://localhost:8000/predict \
 
 ---
 
+## 📈 Visualization & Reporting
+
+This project includes a robust visualization suite for both training analysis and live demonstrations.
+
+### 1. Training & Global Metrics
+To generate plots from your latest training run (`training_history.json` and `metrics.json`):
+```bash
+python3 generate_plots.py
+```
+- **Output**: `reports/plots/training_evolution.png` and `confusion_matrix_heatmap.png`.
+- **When to run**: After completing a training or evaluation run.
+
+### 2. Live Presentation Mode (Inference)
+Generate real-time visual explanations for any C/C++ code snippet:
+```bash
+# SHAP Token Importance + Confusion Matrix
+python3 -m src.model.predict --code "void vuln() { char b[10]; gets(b); }" --visualize
+
+# Self-Attention Heatmap (Model "Thinking" Process)
+python3 -m src.model.predict --code "void vuln() { char b[10]; gets(b); }" --attention
+```
+- **Output**: Saved to `reports/plots/` and **automatically opened** on your screen.
+- **When to run**: During a project demo to show the model's internal reasoning.
+
+---
+
 ## 📖 Detailed Documentation
 For a deep dive into the methodology, hyperparameter optimization, and formal academic analysis, please refer to:
 👉 **[Academic Report & System Documentation](DOCUMENTATION.md)**

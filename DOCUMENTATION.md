@@ -102,12 +102,28 @@ The model was evaluated on a held-out test set of **33,143 samples** and a manua
 Beyond simple classification, this project implements a **Transparency Layer**:
 -   **LIME (Local Interpretable Model-agnostic Explanations)**: Generates fast, natural language "Findings" describing which tokens (e.g., `strcpy`, `malloc`) influenced the decision.
 -   **SHAP (SHapley Additive exPlanations)**: Produces pixel-accurate heatmaps showing the exact contribution of every code token to the final vulnerability probability.
+-   **Self-Attention Visualization**: Extracts internal transformer weights to show how the model relates different parts of the code (e.g., how it connects a `char buffer[10]` declaration to a `gets(buffer)` call).
 
 ---
 
-## 7. Technical Presentation Highlights (Talking Points)
+## 7. Visualization Suite & Presentation Mode
 
-Use these points to explain the "Value Add" of this work during your presentation:
+For academic and professional presentations, the system provides a specialized visualization layer.
+
+### 📊 Report Generation (`generate_plots.py`)
+Used to convert raw JSON data into publication-quality images:
+1.  **Metric Evolution**: Tracks Loss, Accuracy, and F1-Score over epochs.
+2.  **Confusion Matrix**: A professional heatmap showing classification performance.
+
+### 🖥️ Live Demo Mode (`--visualize`, `--attention`)
+The inference engine (`src/model/predict.py`) is optimized for real-time demonstrations:
+-   **Execution**: `python3 -m src.model.predict --code "..." --attention`
+-   **Impact**: Instantly generates and opens a heatmap showing the model's internal attention mechanism. This demonstrates that the model is learning *logic* and *relationships*, not just keyword matching.
+
+---
+
+## 8. Technical Presentation Highlights (Talking Points)
+... (rest of the points)
 
 *   **The Model Adaption Challenge**: "We didn't just use a pre-trained model; we re-engineered BERT-base (Natural Language) for C++ syntax, which is a fundamentally different linguistic structure."
 *   **The MLP Head**: "To compensate for BERT's lack of native code knowledge, we injected a custom 2-layer MLP head. This acts as a 'specialized brain' that learns high-level vulnerability patterns better than the default 1-layer architecture."

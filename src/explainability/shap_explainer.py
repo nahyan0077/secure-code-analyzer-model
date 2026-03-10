@@ -15,6 +15,7 @@ from transformers import PreTrainedModel, PreTrainedTokenizerBase
 from configs.config import Config
 from src.model.model_loader import load_trained_model
 from src.utils.logger import get_logger
+from src.utils.visualizer import plot_token_importance
 
 logger = get_logger(__name__)
 
@@ -85,12 +86,13 @@ class ShapExplainer:
 
         return np.array(results)
 
-    def explain(self, code: str, max_tokens: int = 50) -> list[dict]:
+    def explain(self, code: str, max_tokens: int = 50, output_plot_path: Optional[str] = None) -> list[dict]:
         """Generate per-token SHAP contribution scores.
 
         Args:
             code: C/C++ code snippet.
             max_tokens: Maximum number of top contributing tokens to return.
+            output_plot_path: Path to save the token importance plot (optional).
 
         Returns:
             List of ``{"token": str, "score": float}`` dicts, sorted by
@@ -115,6 +117,9 @@ class ShapExplainer:
                 if str(tok).strip()  # skip empty tokens
             ]
             token_scores.sort(key=lambda x: abs(x["score"]), reverse=True)
+
+            if output_plot_path:
+                plot_token_importance(token_scores, output_plot_path, title=f"Token Importance (SHAP)")
 
             return token_scores[:max_tokens]
 

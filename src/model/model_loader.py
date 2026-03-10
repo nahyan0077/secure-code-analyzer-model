@@ -122,7 +122,7 @@ def load_trained_model(
     base_model_name_or_path = saved_config.get("_name_or_path", Config.MODEL_NAME)
 
     # 1. Load the model architecture
-    model = AutoModelForSequenceClassification.from_pretrained(path)
+    model = AutoModelForSequenceClassification.from_pretrained(path, attn_implementation="eager")
     
     # 2. Re-inject the custom MLP head if it's a non-CodeBERT model
     # We use base_model_name_or_path to determine if it needs the head
